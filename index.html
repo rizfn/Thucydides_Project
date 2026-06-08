@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Thucydides trap — minimal model</title>
+<meta name="viewport" content="width=900">
+<style>
+  body { font-family: -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+         max-width: 720px; margin: 4em auto; padding: 0 1em; color: #1d2735;
+         line-height: 1.5; }
+  h1 { font-size: 1.5em; margin-bottom: 0.2em; }
+  .sub { color: #6b7383; margin-top: 0; }
+  a.button { display: inline-block; padding: 0.6em 1.2em; background: #2c4d8a;
+             color: white; text-decoration: none; border-radius: 4px; margin: 0.3em 0.3em 0.3em 0; }
+  a.button:hover { filter: brightness(1.05); }
+  ul { line-height: 1.7; }
+  code { background: #f0f3f6; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>Thucydides trap — minimal stochastic model</h1>
+<p class="sub">A two-parameter Gillespie process on a 2D lattice. Paper, code, applet, and empirical replication.</p>
+
+<p>
+  <a class="button" href="applet.html">▶ Run the interactive applet</a>
+  <a class="button" href="paper/thucydides_prl.pdf">📄 Read the paper</a>
+  <a class="button" href="note/thucydides_evidence_note.pdf">📊 Empirical evidence note</a>
+</p>
+
+<h2>What this is</h2>
+<p>Three reaction channels on a periodic lattice — growth, war, fragmentation —
+produce the qualitative phenomenology of the Thucydides trap: mutual growth raises the
+per-pair war rate, an Ibn Khaldūn sustainability ceiling makes large states brittle,
+the resulting dynamics give heavy-tailed war-size distributions, sharp
+multipolar–hegemonic transitions, and recurrent rise-and-fall cycles of dominant powers.</p>
+
+<h2>Repository</h2>
+<ul>
+  <li><a href="https://github.com/YOUR-GITHUB-USER/Thucydides_Project">Source on GitHub</a></li>
+  <li>Manuscript: <a href="paper/thucydides_prl.pdf">paper/thucydides_prl.pdf</a></li>
+  <li>Empirical evidence note (COW + Warring States + Diadochi): <a href="note/thucydides_evidence_note.pdf">note/thucydides_evidence_note.pdf</a></li>
+  <li>Interactive applet: <a href="applet.html">applet.html</a></li>
+</ul>
+
+<h2>Quick start</h2>
+<pre><code>git clone https://github.com/YOUR-GITHUB-USER/Thucydides_Project.git
+cd Thucydides_Project
+python3 thucydides_model.py    # short demo run
+python3 make_figures.py        # regenerate paper figures
+python3 verify.py              # self-tests
+open applet.html               # interactive simulator</code></pre>
+
+</body>
+</html>

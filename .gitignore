@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.venv/
+.env
+
+# Pickled simulation caches (regenerable)
+baseline_*.pkl
+phase_*.npy
+
+# Node testing artifacts
+_extracted_*.js
+_test_applet_*.js
+_test_sim*.js
+_sim_extracted*.js
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# LaTeX build artefacts (keep .tex and .pdf)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+
+# Datasets (licensed; downloaded separately, see README)
+DataSets/
+note/evidence_summary.json
+note/ancient_summary.json

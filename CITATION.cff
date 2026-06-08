@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "A minimal stochastic model for the Thucydides trap: growth, tension, and war on a lattice of states"
+message: "If you use this code or paper, please cite the entry below."
+type: software
+authors:
+  - family-names: Heltberg
+    given-names: Mathias
+    affiliation: "Niels Bohr Institute, University of Copenhagen"
+abstract: >-
+  A minimal two-parameter Gillespie process on a 2D periodic lattice
+  in which territorial states grow in internal strength, wage war at a
+  rate proportional to the smaller side's strength, and fragment when
+  over-extended. The model implements the Thucydides power-transition
+  mechanism mechanistically and reproduces a heavy-tailed war-size
+  distribution, multipolar-to-hegemonic transitions, and recurrent
+  rise-and-fall cycles of dominant powers. Includes empirical
+  comparison with the Correlates of War dataset and replication on
+  Warring States China and Hellenistic Diadochi.
+keywords:
+  - statistical physics
+  - non-equilibrium dynamics
+  - international relations
+  - power transition theory
+  - Thucydides trap
+  - Gillespie simulation
+  - self-organised criticality
+license: MIT
+year: 2026
