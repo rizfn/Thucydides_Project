@@ -16,6 +16,22 @@ hand-coded Warring States China and Hellenistic Diadochi datasets.
 
 ---
 
+## Newer explorations (continuous / agent-based directions)
+
+Two self-contained subprojects extend the lattice model toward continuous,
+self-organising dynamics. Each ships its own README and LaTeX notes (with PDFs).
+
+- **[`stepwise_progression/`](stepwise_progression/)** — the model built up one
+  mechanism at a time, starting from pure resource-limited growth. Includes the
+  analytic result that the leader is a driftless Bessel martingale (it always
+  falls) and how the growth exponent α tunes recurrent churn → hegemonic lock-in.
+  Start here: `ANALYSIS_step0.tex`, `ANALYSIS_step1.tex`.
+- **[`selforg_alliances/`](selforg_alliances/)** — a mean-field/agent model with
+  endogenous predictability and balancing alliances (war-driven absorption).
+  See `NOTE_selforg.tex` (v1) and `NOTE_v2.tex` (current).
+
+---
+
 ## Repository layout
 
 ```
@@ -44,6 +60,7 @@ hand-coded Warring States China and Hellenistic Diadochi datasets.
 ```bash
 git clone https://github.com/YOUR-GITHUB-USER/Thucydides_Project.git
 cd Thucydides_Project
+pip install -r requirements.txt
 
 # run a baseline simulation
 python3 thucydides_model.py
@@ -61,6 +78,28 @@ xdg-open applet.html    # Linux
 
 The applet is a single self-contained HTML file with no build step. It
 runs entirely client-side (Gillespie events in JavaScript at ~300k/s).
+
+## Continuing in Claude Code
+
+This project ships with a `CLAUDE.md` that documents the file layout,
+conventions, and key commands. After cloning, just run:
+
+```bash
+cd Thucydides_Project
+claude
+```
+
+Claude Code will auto-load `CLAUDE.md` and have full context. Useful prompts:
+
+- `regenerate the paper figures and rebuild the PDF`
+- `port my latest change in thucydides_model.py into the JS applet and run the Node parity test`
+- `add a new empirical test to thucydides_evidence.py for the alliance dyad subset`
+- `bump the cache prefix to v5 because I changed the war damage rule`
+
+The `CLAUDE.md` also flags the Python↔JavaScript parity invariant (the `Sim`
+class in `applet.html` mirrors `thucydides_model.py`), the gitignored
+`DataSets/`, and the edge-counting convention in `_rebuild_boundary` — so
+Claude won't reintroduce known footguns.
 
 ---
 
