@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Thucydides trap on a torus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#2e3230; --board-deep:#262a28;
+    --chalk:#e8e6df; --chalk-dim:#a9aca4;
+    --pink:#f2a7c3; --mint:#a8e6b8; --sky:#a7d3f2; --butter:#f2e3a7;
+    --line:rgba(232,230,223,0.16);
+    font-size:15px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 700px at 30% -10%, rgba(255,255,255,0.045), transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, rgba(255,255,255,0.03), transparent 60%),
+      var(--board);
+    color:var(--chalk);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    min-height:100%;
+  }
+  header{display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; padding:1.1rem 1.5rem 0.4rem;}
+  header h1{font-family:"Caveat",cursive; font-weight:700; font-size:2.3rem; letter-spacing:0.5px;
+    text-shadow:0 0 8px rgba(232,230,223,0.15);}
+  header .sub{color:var(--chalk-dim); font-size:0.92rem;}
+  header .sub b{color:var(--pink); font-weight:600;}
+  main{display:grid; gap:1rem; grid-template-columns:290px minmax(420px,1fr) 330px;
+    padding:0.6rem 1.5rem 1.5rem; align-items:start;}
+  @media (max-width:1100px){ main{grid-template-columns:1fr;} }
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.06));
+    border:1px solid var(--line); border-radius:10px; padding:0.9rem 1rem;}
+  .panel h2{font-family:"Caveat",cursive; font-weight:600; font-size:1.45rem;
+    margin-bottom:0.5rem; color:var(--mint);}
+  .ctl{margin-bottom:0.75rem;}
+  .ctl label{display:flex; justify-content:space-between; align-items:baseline;
+    font-size:0.83rem; color:var(--chalk-dim); margin-bottom:0.15rem;}
+  .ctl label .val{font-family:"IBM Plex Mono",monospace; color:var(--chalk); font-size:0.85rem;}
+  input[type=range]{width:100%; appearance:none; height:4px; border-radius:2px;
+    background:rgba(232,230,223,0.22); outline:none;}
+  input[type=range]::-webkit-slider-thumb{appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--chalk); border:2px solid var(--board);
+    box-shadow:0 0 0 1px rgba(232,230,223,0.5); cursor:pointer;}
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--sky);}
+  .ctl-group{border-top:1px dashed var(--line); padding-top:0.6rem; margin-top:0.6rem;}
+  .ctl-group .gt{font-size:0.72rem; text-transform:uppercase; letter-spacing:0.12em;
+    color:var(--chalk-dim); margin-bottom:0.5rem;}
+  .btnrow{display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.4rem;}
+  button{font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:0.85rem;
+    color:var(--board-deep); background:var(--chalk); border:none; border-radius:7px;
+    padding:0.45rem 0.9rem; cursor:pointer;}
+  button.ghost{background:transparent; color:var(--chalk); border:1px solid var(--line);}
+  button:hover{filter:brightness(1.08);}
+  button:focus-visible{outline:2px solid var(--sky); outline-offset:2px;}
+  #seedIn{width:6.5rem; font-family:"IBM Plex Mono",monospace; font-size:0.85rem;
+    background:transparent; color:var(--chalk); border:1px solid var(--line);
+    border-radius:6px; padding:0.35rem 0.5rem;}
+  #stageWrap{position:relative;}
+  #grid{width:100%; height:auto; display:block; border-radius:10px;}
+  #tip{position:absolute; pointer-events:none; display:none;
+    background:rgba(20,22,21,0.94); border:1px solid var(--line); border-radius:8px;
+    padding:0.5rem 0.7rem; font-size:0.8rem; line-height:1.45; max-width:230px;
+    font-family:"IBM Plex Mono",monospace; z-index:5;}
+  #tip .tn{font-family:"Caveat",cursive; font-size:1.15rem; font-weight:700;}
+  .stagefoot{display:flex; justify-content:space-between; align-items:center;
+    color:var(--chalk-dim); font-size:0.8rem; padding:0.35rem 0.4rem 0;
+    font-family:"IBM Plex Mono",monospace;}
+  .chart{width:100%; height:auto; display:block; margin-bottom:0.8rem;}
+  #log{font-family:"IBM Plex Mono",monospace; font-size:0.74rem; line-height:1.55;
+    color:var(--chalk-dim); max-height:180px; overflow-y:auto;
+    border-top:1px dashed var(--line); padding-top:0.5rem;}
+  #log .war{color:var(--pink);} #log .ally{color:var(--mint);} #log .vassal{color:var(--butter);}
+  .kbd{color:var(--chalk-dim); font-size:0.75rem; margin-top:0.5rem;}
+  .kbd code{border:1px solid var(--line); border-radius:4px; padding:0 4px;
+    font-family:"IBM Plex Mono",monospace;}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Thucydides trap on a torus</h1>
+  <div class="sub">soldiers are yesterday's wealth: <b>attack when the rival is already richer — but not yet stronger</b></div>
+</header>
+
+<main>
+  <!-- ===================== controls ===================== -->
+  <section class="panel" aria-label="Parameters">
+    <h2>Parameters</h2>
+
+    <div class="ctl-group" style="border-top:none; padding-top:0; margin-top:0;">
+      <div class="gt">Geometry (applied on reset)</div>
+      <div class="ctl"><label for="pL">lattice side <i>L</i> (torus <i>L&times;L</i>) <span class="val" id="vL"></span></label>
+        <input type="range" id="pL" min="16" max="48" step="2" value="32"></div>
+      <div class="ctl"><label for="pN">initial states <i>N</i> <span class="val" id="vN"></span></label>
+        <input type="range" id="pN" min="2" max="40" step="1" value="15"></div>
+    </div>
+
+    <div class="ctl-group">
+      <div class="gt">Physics (live)</div>
+      <div class="ctl"><label for="pTau">arming delay <i>&tau;</i> <span class="val" id="vTau"></span></label>
+        <input type="range" id="pTau" min="1" max="200" step="1" value="25"></div>
+      <div class="ctl"><label for="pC">casualty fraction <i>c</i> <span class="val" id="vC"></span></label>
+        <input type="range" id="pC" min="0" max="0.9" step="0.05" value="0.10"></div>
+      <div class="ctl"><label for="pSig">harvest noise <i>&sigma;</i> <span class="val" id="vSig"></span></label>
+        <input type="range" id="pSig" min="0" max="1" step="0.05" value="1.00"></div>
+      <div class="ctl"><label for="pSpd">steps / frame <span class="val" id="vSpd"></span></label>
+        <input type="range" id="pSpd" min="1" max="30" step="1" value="3"></div>
+    </div>
+
+    <div class="ctl-group">
+      <div class="gt">Run</div>
+      <div class="btnrow">
+        <button id="bPause">Pause</button>
+        <button id="bStep" class="ghost">Step once</button>
+      </div>
+      <div class="btnrow" style="align-items:center;">
+        <input id="seedIn" value="42" aria-label="random seed" />
+        <button id="bReset" class="ghost">Reset with seed</button>
+      </div>
+      <div class="kbd">keys: <code>space</code> pause &middot; <code>s</code> step &middot; <code>r</code> reset</div>
+    </div>
+
+    <div class="ctl-group">
+      <div class="gt">The complete rules</div>
+      <div style="font-size:0.78rem; line-height:1.55; color:var(--chalk-dim);">
+        <b style="color:var(--chalk)">Wealth</b>: each site yields a harvest
+        1+&sigma;(2u&minus;1), u~U(0,1); the owner accumulates it.
+        (&sigma;=0: no fluctuations, wealth trajectories never cross, the trap
+        never fires.)<br>
+        <b style="color:var(--chalk)">Soldiers</b>: S gains the income earned &tau; steps
+        ago (so an untouched army is delayed wealth, S(t)=W(t&minus;&tau;)); each war
+        fought costs S&rarr;(1&minus;c)S.<br>
+        <b style="color:var(--chalk)">Each step, one random state</b> (&tilde; = bloc sums):<br>
+        &nbsp;1. <b style="color:var(--pink)">war</b> on a rival neighbour that is richer
+        (W&#771;<sub>e</sub>&gt;W&#771;<sub>j</sub>: will out-arm you) but still weaker
+        (S&#771;<sub>j</sub>&gt;S&#771;<sub>e</sub>: today you win);<br>
+        &nbsp;2. else, if a rival bloc is stronger, <b style="color:var(--mint)">propose an
+        alliance</b> to a random state — accepted iff the other party also faces a
+        stronger rival (mutual benefit);<br>
+        &nbsp;3. else, with no threat left, <b style="color:var(--mint)">walk away</b>
+        from its alliance.<br>
+        <b style="color:var(--chalk)">War</b>: allies decide one at a time — march iff
+        your side, counting you, out-guns the troops committed opposite; declining has
+        no other consequence. The winner takes one border province of the loser; a state
+        on its last plot is instead <b style="color:var(--butter)">vassalized</b>: it
+        keeps the plot, is torn from its alliance, and is bound into the victor's.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== torus ===================== -->
+  <section class="panel" aria-label="Simulation">
+    <div id="stageWrap">
+      <canvas id="grid" width="900" height="900" role="img" aria-label="Torus of territories colored by state"></canvas>
+      <div id="tip"></div>
+    </div>
+    <div class="stagefoot">
+      <span id="tCount">t = 0</span>
+      <span>circle radius &prop; &radic;S&#771; &middot; lines = alliances (periodic boundaries)</span>
+    </div>
+  </section>
+
+  <!-- ===================== observables ===================== -->
+  <section class="panel" aria-label="Observables">
+    <h2>Observables</h2>
+    <canvas id="chartW"  class="chart" width="640" height="270"></canvas>
+    <canvas id="chartB"  class="chart" width="640" height="270"></canvas>
+    <canvas id="chartMx" class="chart" width="640" height="270"></canvas>
+    <h2 style="color:var(--sky); margin-top:0.2rem;">Chronicle</h2>
+    <div id="log" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* =====================================================================
+   Identical model to the ring version — only the lattice factory and the
+   renderer differ. The dynamics never touch geometry except through
+   lat.nbrs, which is why the 1D -> 2D upgrade is a drop-in.
+   ===================================================================== */
+
+/* ---------- seeded RNG (mulberry32) ---------- */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function hashSeed(str){
+  let h = 2166136261 >>> 0;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+/* ---------- lattice: L x L torus, 4-neighbour ---------- */
+function makeTorus(L){
+  const n = L*L, nbrs = [], pos = [];
+  for(let y=0; y<L; y++) for(let x=0; x<L; x++){
+    nbrs.push([ y*L + (x+1)%L, y*L + (x-1+L)%L,
+                ((y+1)%L)*L + x, ((y-1+L)%L)*L + x ]);
+    pos.push({x, y});
+  }
+  return { n, nbrs, pos, kind:"torus", side:L };
+}
+
+/* ---------- bounded time series (stride-doubling decimation) ----------
+   Series keep at most ~2048 stored points regardless of run length: when
+   full, adjacent pairs are averaged and the sampling stride doubles. This
+   bounds both memory and per-frame drawing cost, and avoids spreading a
+   huge array into Math.max (the source of the call-stack overflow). */
+const SERIES_CAP = 2048;
+function makeSeries(){ return { data:[], stride:1, acc:0, cnt:0 }; }
+function pushSeries(S, v){
+  S.acc += v; S.cnt++;
+  if(S.cnt < S.stride) return;
+  S.data.push(S.acc / S.stride); S.acc = 0; S.cnt = 0;
+  if(S.data.length >= SERIES_CAP){
+    const d = [];
+    for(let i=0; i+1<S.data.length; i+=2) d.push((S.data[i]+S.data[i+1])/2);
+    S.data = d; S.stride *= 2;
+  }
+}
+
+/* ---------- simulation (verbatim from the ring version) ----------
+   Three physics parameters — tau, c, sigma — and nothing hidden:
+     wealth   W_i(t+1) = W_i(t) + sum_{x in i} [1 + sigma*(2u_x(t)-1)]
+     soldiers S_i(t+1) = S_i(t) + [W_i(t-tau) - W_i(t-tau-1)]
+              plus battle casualties: S *= (1-c) per war fought.
+   Politics: WAR on a richer-but-weaker rival bloc; else ALLY under mutual
+   benefit; else LEAVE. War: sequential join decisions; winner takes one
+   border province; a last-plot loser is vassalized, never destroyed. */
+const HISTMAX = 256;
+
+class Sim {
+  constructor(side, N, seed){
+    this.rng   = mulberry32(seed);
+    this.lat   = makeTorus(side);
+    const M    = this.lat.n;
+    this.t     = 0;
+    this.owner = new Int32Array(M);
+
+    this.states = [];
+    for(let i=0; i<N; i++){
+      this.states.push({
+        id:i, land:0, W:1, S:0,
+        hist:new Float64Array(HISTMAX),
+        ally:i,
+        color: chalkColor(i, N),
+        name: STATE_NAMES[i % STATE_NAMES.length] + (i>=STATE_NAMES.length ? "-"+i : "")
+      });
+    }
+    /* initial territories: Voronoi cells of N random seeds (torus metric) */
+    const seeds = [];
+    const used = new Set();
+    while(seeds.length < N){
+      const z = Math.floor(this.rng()*M);
+      if(!used.has(z)){ used.add(z); seeds.push(this.lat.pos[z]); }
+    }
+    const d2 = (a,b)=>{
+      let dx = Math.abs(a.x-b.x); dx = Math.min(dx, side-dx);
+      let dy = Math.abs(a.y-b.y); dy = Math.min(dy, side-dy);
+      return dx*dx + dy*dy;
+    };
+    for(let z=0; z<M; z++){
+      let best = 0, bd = Infinity;
+      for(let i=0; i<N; i++){
+        const d = d2(this.lat.pos[z], seeds[i]);
+        if(d < bd){ bd = d; best = i; }
+      }
+      this.owner[z] = best;
+    }
+    for(const s of this.states) s.land = 0;
+    for(let z=0; z<M; z++) this.states[this.owner[z]].land++;
+
+    this.series = { wr:makeSeries(), mx:makeSeries(), b:makeSeries() };
+    this.wbuf = new Int8Array(200);          // circular 0/1 window, O(1) war rate
+    this.wsum = 0;
+    this.blocsNow = N;
+    this.warflag = 0;
+    this.events = [];
+  }
+
+  gsum(f){
+    const m = new Map();
+    for(const s of this.states) m.set(s.ally, (m.get(s.ally)||0) + f(s));
+    return m;
+  }
+
+  neighboursOf(j){
+    const set = new Set();
+    for(let z=0; z<this.lat.n; z++){
+      if(this.owner[z] !== j) continue;
+      for(const y of this.lat.nbrs[z]){
+        const o = this.owner[y];
+        if(o !== j) set.add(o);
+      }
+    }
+    return [...set];
+  }
+
+  step(P){
+    const M = this.lat.n;
+    for(let z=0; z<M; z++)
+      this.states[this.owner[z]].W += 1 + P.sig*(2*this.rng() - 1);
+    for(const s of this.states){
+      s.hist[this.t % HISTMAX] = s.W;
+      const a = this.t - P.tau, b = a - 1;
+      if(b >= 0) s.S += s.hist[a % HISTMAX] - s.hist[b % HISTMAX];
+    }
+    this.warflag = 0;
+    this.politics(P);
+    const i200 = this.t % 200;
+    this.wsum += this.warflag - this.wbuf[i200];
+    this.wbuf[i200] = this.warflag;
+    pushSeries(this.series.wr, this.wsum);
+    pushSeries(this.series.mx, Math.max(...this.states.map(s=>s.land))/M);
+    this.blocsNow = new Set(this.states.map(s=>s.ally)).size;
+    pushSeries(this.series.b, this.blocsNow);
+    this.t++;
+  }
+
+  politics(P){
+    const all = this.states;
+    const j = all[Math.floor(this.rng()*all.length)];
+    const GS = this.gsum(s=>s.S), GW = this.gsum(s=>s.W);
+    const Sj = GS.get(j.ally), Wj = GW.get(j.ally);
+
+    const rivals = this.neighboursOf(j.id).map(i=>this.states[i])
+                       .filter(s => s.ally !== j.ally);
+
+    const targets = rivals.filter(e => GW.get(e.ally) > Wj && Sj > GS.get(e.ally));
+    if(targets.length){
+      this.war(j, targets[Math.floor(this.rng()*targets.length)], P);
+      return;
+    }
+
+    if(rivals.some(s => GS.get(s.ally) > Sj)){
+      const cands = all.filter(s => s.id!==j.id && s.ally!==j.ally);
+      if(cands.length === 0) return;
+      const k = cands[Math.floor(this.rng()*cands.length)];
+      const Sk = GS.get(k.ally);
+      const kThreat = this.neighboursOf(k.id).map(i=>this.states[i])
+        .some(s => s.ally!==k.ally && GS.get(s.ally) > Sk);
+      if(kThreat){
+        const from = k.ally, to = j.ally;
+        for(const s of this.states) if(s.ally===from) s.ally = to;
+        this.events.push({k:"ally", txt:`t=${this.t}: ${k.name} allies with ${j.name}`});
+      }
+      return;
+    }
+
+    if(this.hasAllies(j)){
+      j.ally = -(100000*(j.id+1) + this.t);
+      this.events.push({k:"ally", txt:`t=${this.t}: ${j.name} walks away from its alliance`});
+    }
+  }
+
+  hasAllies(j){
+    return this.states.some(s => s.id!==j.id && s.ally===j.ally);
+  }
+
+  war(j, e, P){
+    if(!this.borderOf(e.id, j.id).length) return;
+
+    const A = [j], D = [e];
+    const cand = this.states.filter(s => s.id!==j.id && s.id!==e.id
+                                          && (s.ally===j.ally || s.ally===e.ally));
+    for(let i=cand.length-1; i>0; i--){
+      const r = Math.floor(this.rng()*(i+1)); [cand[i],cand[r]] = [cand[r],cand[i]];
+    }
+    const tot = side => side.reduce((a,s)=>a+s.S, 0);
+    for(const m of cand){
+      const mine  = m.ally===j.ally ? A : D;
+      const other = m.ally===j.ally ? D : A;
+      if(tot(mine) + m.S > tot(other)) mine.push(m);
+    }
+
+    const SA = tot(A), SD = tot(D);
+    const win  = SA > SD ? j : e;
+    const lose = SA > SD ? e : j;
+    const verdict = SA > SD ? "attackers prevail" : "the invasion is repelled";
+    this.events.push({k:"war",
+      txt:`t=${this.t}: ${j.name} strikes ${e.name} (${A.length} vs ${D.length} armies) — ${verdict}`});
+    this.warflag = 1;
+
+    if(lose.land === 1){
+      lose.ally = win.ally;
+      this.events.push({k:"vassal", txt:`t=${this.t}: ${lose.name} is vassalized by ${win.name}`});
+    } else {
+      const b = this.borderOf(lose.id, win.id);
+      if(b.length){
+        const x = b[Math.floor(this.rng()*b.length)];
+        this.owner[x] = win.id; win.land++; lose.land--;
+      }
+    }
+    for(const s of A) s.S *= (1 - P.c);
+    for(const s of D) s.S *= (1 - P.c);
+  }
+
+  borderOf(a, b){
+    const out = [];
+    for(let z=0; z<this.lat.n; z++){
+      if(this.owner[z] !== a) continue;
+      if(this.lat.nbrs[z].some(y => this.owner[y] === b)) out.push(z);
+    }
+    return out;
+  }
+}
+
+/* ---------- names & chalk palette ---------- */
+const STATE_NAMES = ["Avaria","Borsca","Cadria","Drovny","Elysra","Fennmark","Gorvia",
+  "Hesland","Istrya","Jorvik","Kelvara","Lumbria","Morvane","Norrey",
+  "Ostavia","Pellun","Qirest","Rovania","Sielda","Trevna","Umbria",
+  "Velmora","Wrendal","Xanthe","Yllova","Zemlin"];
+function chalkColor(i, N){
+  const h = (i * 137.508) % 360;
+  return `hsl(${h.toFixed(1)} 55% 72%)`;
+}
+
+/* =====================================================================
+   UI wiring
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const sliders = { L:$("pL"), N:$("pN"), tau:$("pTau"), c:$("pC"), sig:$("pSig"), spd:$("pSpd") };
+const vals    = { L:$("vL"), N:$("vN"), tau:$("vTau"), c:$("vC"), sig:$("vSig"), spd:$("vSpd") };
+
+function readP(){
+  return { L:+sliders.L.value, N:+sliders.N.value, tau:+sliders.tau.value,
+           c:+sliders.c.value, sig:+sliders.sig.value, spd:+sliders.spd.value };
+}
+function showVals(){
+  const P = readP();
+  vals.L.textContent   = P.L + " × " + P.L;
+  vals.N.textContent   = P.N;
+  vals.tau.textContent = P.tau;
+  vals.c.textContent   = P.c.toFixed(2);
+  vals.sig.textContent = P.sig.toFixed(2);
+  vals.spd.textContent = P.spd;
+}
+for(const k in sliders) sliders[k].addEventListener("input", showVals);
+showVals();
+
+let sim, paused = false;
+function reset(){
+  const P = readP();
+  const seed = hashSeed($("seedIn").value.trim() || "42");
+  sim = new Sim(P.L, P.N, seed);
+  $("log").innerHTML = "";
+  draw();
+}
+$("bReset").onclick = reset;
+$("bPause").onclick = () => { paused = !paused; $("bPause").textContent = paused ? "Run" : "Pause"; };
+$("bStep").onclick  = () => { sim.step(readP()); draw(); flushLog(); };
+document.addEventListener("keydown", ev=>{
+  if(ev.target.tagName === "INPUT" && ev.target.type === "text") return;
+  if(ev.code === "Space"){ ev.preventDefault(); $("bPause").click(); }
+  if(ev.key === "s") $("bStep").click();
+  if(ev.key === "r") reset();
+});
+
+/* ---------- torus rendering ---------- */
+const gc = $("grid"), gctx = gc.getContext("2d");
+
+function draw(){
+  const side = sim.lat.side, M = sim.lat.n;
+  const cell = gc.width / side;
+  const ctx = gctx;
+  ctx.clearRect(0,0,gc.width,gc.height);
+
+  /* territory cells */
+  for(let z=0; z<M; z++){
+    const p = sim.lat.pos[z];
+    ctx.fillStyle = sim.states[sim.owner[z]].color;
+    ctx.fillRect(p.x*cell, p.y*cell, cell+0.5, cell+0.5);
+  }
+
+  /* chalk borders between different owners */
+  ctx.strokeStyle = "rgba(38,42,40,0.95)"; ctx.lineWidth = Math.max(1.5, cell*0.10);
+  ctx.beginPath();
+  for(let y=0; y<side; y++) for(let x=0; x<side; x++){
+    const o = sim.owner[y*side+x];
+    if(sim.owner[y*side + (x+1)%side] !== o){
+      const X = ((x+1)%side===0 ? side : x+1)*cell;
+      ctx.moveTo(X, y*cell); ctx.lineTo(X, (y+1)*cell);
+    }
+    if(sim.owner[((y+1)%side)*side + x] !== o){
+      const Y = ((y+1)%side===0 ? side : y+1)*cell;
+      ctx.moveTo(x*cell, Y); ctx.lineTo((x+1)*cell, Y);
+    }
+  }
+  ctx.stroke();
+
+  /* state centroids (torus circular mean) */
+  const cent = new Map();
+  const acc = new Map();
+  for(let z=0; z<M; z++){
+    const o = sim.owner[z], p = sim.lat.pos[z];
+    if(!acc.has(o)) acc.set(o,{cx:0,sx:0,cy:0,sy:0});
+    const a = acc.get(o);
+    const tx = 2*Math.PI*p.x/side, ty = 2*Math.PI*p.y/side;
+    a.cx += Math.cos(tx); a.sx += Math.sin(tx);
+    a.cy += Math.cos(ty); a.sy += Math.sin(ty);
+  }
+  for(const [o,a] of acc){
+    let ax = Math.atan2(a.sx,a.cx); if(ax<0) ax += 2*Math.PI;
+    let ay = Math.atan2(a.sy,a.cy); if(ay<0) ay += 2*Math.PI;
+    cent.set(o, { X:(ax/(2*Math.PI))*side*cell, Y:(ay/(2*Math.PI))*side*cell });
+  }
+
+  /* alliance links between bloc members */
+  const groups = new Map();
+  for(const s of sim.states){
+    if(!groups.has(s.ally)) groups.set(s.ally, []);
+    groups.get(s.ally).push(s);
+  }
+  ctx.lineWidth = 2.5;
+  for(const members of groups.values()){
+    if(members.length < 2) continue;
+    for(let a=0; a<members.length; a++) for(let b=a+1; b<members.length; b++){
+      const p1 = cent.get(members[a].id), p2 = cent.get(members[b].id);
+      if(!p1 || !p2) continue;
+      ctx.beginPath();
+      ctx.moveTo(p1.X,p1.Y); ctx.lineTo(p2.X,p2.Y);
+      ctx.strokeStyle = members[0].color;
+      ctx.globalAlpha = 0.45; ctx.stroke(); ctx.globalAlpha = 1;
+    }
+  }
+
+  /* strength markers: radius ~ sqrt(bloc strength) */
+  const GS = sim.gsum(s=>s.S);
+  let maxG = 1; for(const v of GS.values()) maxG = Math.max(maxG, v);
+  for(const s of sim.states){
+    const p = cent.get(s.id); if(!p) continue;
+    const r = 5 + 22*Math.sqrt((GS.get(s.ally)||0)/maxG);
+    ctx.beginPath(); ctx.arc(p.X, p.Y, r, 0, 2*Math.PI);
+    ctx.fillStyle = "rgba(38,42,40,0.35)"; ctx.fill();
+    ctx.strokeStyle = s.color; ctx.lineWidth = 3; ctx.stroke();
+  }
+
+  $("tCount").textContent = `t = ${sim.t} · alliance blocs: ${sim.blocsNow}`;
+  drawChart($("chartW"),  sim.series.wr, "t", "wars / 200 steps", false);
+  drawChart($("chartB"),  sim.series.b,  "t", "# alliance blocs", false);
+  drawChart($("chartMx"), sim.series.mx, "t", "largest share", true);
+}
+
+/* ---------- publication-style time series ---------- */
+function drawChart(cv, S, xlab, ylab, unit01){
+  const ys = S.data, stride = S.stride;
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height;
+  const ml = 88, mr = 16, mt = 14, mb = 62;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle = "rgba(232,230,223,0.85)"; ctx.lineWidth = 2;
+  ctx.strokeRect(ml, mt, W-ml-mr, H-mt-mb);
+  const n = ys.length;
+  let ymax = 1;
+  if(!unit01) for(const v of ys) if(v > ymax) ymax = v;
+  const ymin = 0;
+  const T = Math.max(1, (n-1)*stride);          // total simulated time shown
+  const px = i => ml + (W-ml-mr) * (n<=1 ? 0 : i/(n-1));
+  const pt = t => ml + (W-ml-mr) * t/T;         // x-position of a time value
+  const py = v => H-mb - (H-mt-mb) * (v-ymin)/(ymax-ymin || 1);
+  ctx.fillStyle = "rgba(232,230,223,0.9)";
+  ctx.font = "500 20px 'IBM Plex Sans'";
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const xt = niceTicks(0, T, 4);
+  for(const t of xt){
+    if(t > T) continue;
+    const X = pt(t);
+    ctx.beginPath(); ctx.moveTo(X, H-mb); ctx.lineTo(X, H-mb+8); ctx.stroke();
+    ctx.fillText(fmtTick(t), X, H-mb+12);
+  }
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  const yt = niceTicks(ymin, ymax, 4);
+  for(const v of yt){
+    if(v>ymax+1e-9) continue;
+    const Y = py(v);
+    ctx.beginPath(); ctx.moveTo(ml,Y); ctx.lineTo(ml-8,Y); ctx.stroke();
+    ctx.fillText(fmtTick(v), ml-12, Y);
+  }
+  ctx.font = "600 24px 'IBM Plex Sans'";
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(xlab, ml + (W-ml-mr)/2, H-12);
+  ctx.save();
+  ctx.translate(24, mt + (H-mt-mb)/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText(ylab, 0, 0);
+  ctx.restore();
+  if(n>1){
+    ctx.beginPath();
+    for(let t=0;t<n;t++){ const X=px(t), Y=py(ys[t]); t?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }
+    ctx.strokeStyle = "#f2a7c3"; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+}
+function niceTicks(a,b,m){
+  const span=(b-a)||1, raw=span/m, p=Math.pow(10,Math.floor(Math.log10(raw)));
+  const step=[1,2,5,10].map(s=>s*p).find(s=>span/s<=m+0.5) || 10*p;
+  const out=[]; for(let v=Math.ceil(a/step)*step; v<=b+1e-9; v+=step) out.push(v);
+  return out;
+}
+function fmtTick(v){ return Math.abs(v)>=1000 ? (v/1000)+"k" : (Math.round(v*100)/100).toString(); }
+
+/* ---------- tooltip ---------- */
+const tip = $("tip");
+gc.addEventListener("mousemove", ev=>{
+  const r = gc.getBoundingClientRect();
+  const scale = gc.width / r.width;
+  const side = sim.lat.side, cell = gc.width/side;
+  const x = Math.floor((ev.clientX-r.left)*scale / cell);
+  const y = Math.floor((ev.clientY-r.top)*scale / cell);
+  if(x<0||y<0||x>=side||y>=side){ tip.style.display="none"; return; }
+  const s = sim.states[sim.owner[y*side+x]];
+  const GS = sim.gsum(q=>q.S), GW = sim.gsum(q=>q.W);
+  const allies = sim.states.filter(q=>q.ally===s.ally && q.id!==s.id).map(q=>q.name);
+  tip.innerHTML = `<div class="tn" style="color:${s.color}">${s.name}</div>
+    land ${s.land}<br>
+    W=${s.W.toFixed(0)} · S=${s.S.toFixed(0)}<br>
+    bloc: W&#771;=${(GW.get(s.ally)||0).toFixed(0)} · S&#771;=${(GS.get(s.ally)||0).toFixed(0)}<br>
+    allies: ${allies.length? allies.join(", ") : "none"}`;
+  tip.style.display = "block";
+  tip.style.left = (ev.clientX - r.left + 14) + "px";
+  tip.style.top  = (ev.clientY - r.top  + 14) + "px";
+});
+gc.addEventListener("mouseleave", ()=> tip.style.display="none");
+
+/* ---------- chronicle ---------- */
+function flushLog(){
+  if(!sim.events.length) return;
+  const box = $("log");
+  for(const e of sim.events)
+    box.insertAdjacentHTML("afterbegin", `<div class="${e.k}">${e.txt}</div>`);
+  sim.events.length = 0;
+  while(box.children.length > 60) box.removeChild(box.lastChild);
+}
+
+/* ---------- main loop ---------- */
+function loop(){
+  if(!paused){
+    const P = readP();
+    for(let i=0;i<P.spd;i++) sim.step(P);
+    draw(); flushLog();
+  }
+  requestAnimationFrame(loop);
+}
+reset();
+loop();
+</script>
+</body>
+</html>
